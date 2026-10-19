@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Interview — проверка микрофона</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f6f5;
+      color: #20352f;
+      margin: 0;
+      padding: 24px;
+    }
+    main {
+      max-width: 650px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 18px;
+    }
+    button {
+      padding: 14px 20px;
+      margin: 8px 8px 8px 0;
+      border: 0;
+      border-radius: 10px;
+      background: #397963;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; }
+    #status { line-height: 1.6; }
+    audio { width: 100%; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Проверка голосового ввода</h1>
+    <p>Это временная тестовая страница.</p>
+
+    <button id="start">🎤 Начать запись</button>
+    <button id="stop" disabled>■ Остановить</button>
+
+    <p id="status">Микрофон пока не включён.</p>
+    <audio id="player" controls></audio>
+  </main>
+
+  <script>
+    let recorder;
+    let stream;
+    let chunks = [];
+    let audioUrl = null;
+
+    const startButton = document.getElementById("start");
+    const stopButton = document.getElementById("stop");
+    const status = document.getElementById("status");
+    const player = document.getElementById("player");
+
+    startButton.onclick = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia ||
+            typeof MediaRecorder === "undefined") {
+          throw new Error("Запись не поддерживается браузером.");
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true
+        });
+
+        recorder = new MediaRecorder(stream);
+        chunks = [];
+
+        recorder.ondataavailable = event => {
+          if (event.data.size > 0) chunks.push(event.data);
+        };
+
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, {
+            type: recorder.mimeType
+          });
+
+          chunks = [];
+
+          if (audioUrl) URL.revokeObjectURL(audioUrl);
+          audioUrl = URL.createObjectURL(blob);
+          player.src = audioUrl;
+
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+
+          startButton.disabled = false;
+          stopButton.disabled = true;
+          status.textContent =
+            "Запись завершена. Нажмите Play для проверки.";
+        };
+
+        recorder.start();
+        startButton.disabled = true;
+        stopButton.disabled = false;
+        status.textContent = "Идёт запись...";
+      } catch (error) {
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+        status.textContent =
+          "Ошибка микрофона: " + error.message;
+      }
+    };
+
+    stopButton.onclick = () => {
+      if (recorder?.state === "recording") {
+        recorder.stop();
+      }
+    };
+
+    window.addEventListener("pagehide", () => {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    });
+  </script>
+</body>
+</html>
