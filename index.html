@@ -38,6 +38,29 @@
   <main>
     <h1>Проверка голосового ввода</h1>
     <p>Это временная тестовая страница.</p>
+    <button id="checkGas" onclick="checkGasConnection()">
+  🔗 Проверить соединение с GAS
+</button>
+
+<p id="gasResult"></p>
+
+<script>
+async function checkGasConnection() {
+  const result = document.getElementById("gasResult");
+  result.textContent = "Проверяем соединение...";
+
+  try {
+    const response = await fetch(
+      "https://script.google.com/macros/s/AKfycbx2GiSJfO9qvbnevC6D1TNuHp1CC6LPVD63J0f_ivZeqN4ySA-jI7u0ochwhFmpqONv/exec?test=connection"
+    );
+
+    const data = await response.json();
+    result.textContent = "УСПЕХ: " + data.message;
+  } catch (error) {
+    result.textContent = "Не удалось прочитать ответ GAS: " + error.message;
+  }
+}
+</script>
 
     <button id="start">🎤 Начать запись</button>
     <button id="stop" disabled>■ Остановить</button>
