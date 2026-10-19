@@ -194,9 +194,27 @@
             status.textContent =
               "Запись готова. Можно прослушать её.";
 
-            // Передача аудио будет подключена после
-            // добавления принимающего обработчика в GAS.
-            // Пока аудио остаётся в браузере.
+            // Отправляем запись обратно в окно интервью.
+            if (!window.opener || window.opener.closed) {
+              status.textContent =
+                "Запись готова. Откройте микрофон из окна интервью.";
+              return;
+            }
+
+            const base64 = await blobToBase64(blob);
+
+            window.opener.postMessage(
+              {
+                type: "INTERVIEW_AUDIO",
+                base64: base64,
+                extension: format.ext
+              },
+              "*"
+            );
+
+            status.textContent =
+              "Запись отправлена в окно интервью. " +
+              "Проверьте результат распознавания там.";
           } catch (error) {
             status.textContent =
               "Ошибка обработки записи: " + error.message;
